@@ -14,7 +14,7 @@ except Exception as e:
     print(e)
 
 songlink = []
-for i in range(1, 51, 50):
+for i in range(1, 151, 50):
     driver.execute_script("javascript:pageObj.sendPage('%d');" % i)
     time.sleep(2)
     btn = driver.find_elements(By.CLASS_NAME, 'btn.button_icons.type03.song_info')
@@ -36,7 +36,7 @@ with open(filename, 'w+', newline='', encoding='utf-8') as csvfile:
             print('error', e)
             break
         try:
-            tmp.append(i)
+            tmp.append(i+1)
             tmp.append(driver.find_element(By.CLASS_NAME, 'song_name').text)
             tmp.append(driver.find_element(By.CLASS_NAME, 'artist').text)
 
