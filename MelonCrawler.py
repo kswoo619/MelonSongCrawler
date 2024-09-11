@@ -4,54 +4,58 @@ from selenium.webdriver.common.by import By
 import time
 from tqdm import tqdm
 import csv
-# songname, artist, album, date, genre, lyric
+import datetime as dt
 
-# open browser
 driver = webdriver.Chrome()
+url = 'https://www.melon.com/new/index.htm'
+try:
+    response = driver.get(url)
+except Exception as e:
+    print(e)
 
-for idx in tqdm(range(1, 452, 50)):
-    url = f'https://www.melon.com/new/index.htm#params%5BareaFlg%5D=I&po=pageObj&startIndex={idx}'
-    try:
-        response = driver.get(url)
-    except Exception as e:
-        print(e)
-        break
-
-    songlink = []
+songlink = []
+for i in range(1, 51, 50):
+    driver.execute_script("javascript:pageObj.sendPage('%d');" % i)
+    time.sleep(2)
     btn = driver.find_elements(By.CLASS_NAME, 'btn.button_icons.type03.song_info')
-    for i in btn:
-        songlink.append(i.get_attribute('href'))
+    for l in btn:
+        songlink.append(l.get_attribute('href'))
     
-    crawled_data = []
-    for i, link in enumerate(songlink):
+today = dt.datetime.now().strftime('%Y.%m.%d')
+filename = f"Songdata_{today}.csv"
+with open(filename, 'w+', newline='', encoding='utf-8') as csvfile:
+    writer = csv.writer(csvfile, delimiter=',')
+    writer.writerow(['num', 'song', 'artist', 'album', 'date', 'genre', 'lyric'])
+
+    for i, link in tqdm(enumerate(songlink)):
         tmp = []
         try:
             driver.execute_script(link)
             time.sleep(2)
         except Exception as e:
             print('error', e)
-            continue
-        
-        tmp.append(i)
-        tmp.append(driver.find_element(By.CLASS_NAME, 'song_name').text)
-        tmp.append(driver.find_element(By.CLASS_NAME, 'artist').text)
-
-        for i in range(2, 8, 2): # album, date, genre
-            txt = driver.find_element(By.CSS_SELECTOR, f'#downloadfrm > div > div > div.entry > div.meta > dl > dd:nth-child({i})').text
-            tmp.append(txt)
-        
+            break
         try:
-            txt = driver.find_element(By.CLASS_NAME, 'lyric').text
-        except:
-            txt = driver.find_element(By.CLASS_NAME, 'lyric_none').text
-            tmp.append('No Lyric')
-        tmp.append(txt)
+            tmp.append(i)
+            tmp.append(driver.find_element(By.CLASS_NAME, 'song_name').text)
+            tmp.append(driver.find_element(By.CLASS_NAME, 'artist').text)
 
-        crawled_data.append(tmp)
+            for i in range(2, 8, 2): # album, date, genre
+                txt = driver.find_element(By.CSS_SELECTOR, f'#downloadfrm > div > div > div.entry > div.meta > dl > dd:nth-child({i})').text
+                tmp.append(txt)
+            
+            try:
+                txt = driver.find_element(By.CLASS_NAME, 'lyric').text
+            except:
+                txt = driver.find_element(By.CLASS_NAME, 'lyric_none').text
+                tmp.append('No Lyric')
+            tmp.append(txt)
 
-with open('newsong_0904.csv', 'w', newline='', encoding='utf-8') as csvfile:
-    writer = csv.writer(csvfile, delimiter=',')
-    writer.writerow(['num', 'song', 'artist', 'album', 'date', 'genre', 'lyric'])
+        except Exception as e:
+            print(i, e)
+            writer.writerow(tmp)
+            break
 
-    for line in crawled_data:
-        writer.writerow(line)
+        writer.writerow(tmp)
+    else:
+        print('Crawling Success!')
